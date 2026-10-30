@@ -1,0 +1,1418 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DJI 大疆 × 深圳大学 · 未来飞行家 | 校园科技创新体验日</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+/* ============================================================
+   DJI 大疆 × 深圳大学 · 未来飞行家
+   飞行 HUD 美学 · 分页式 · 无人机穿场转场
+   ============================================================ */
+:root{
+  --bg:#0B0D10;
+  --bg2:#10141A;
+  --ink:#F4F6F8;
+  --dim:#AEB9C6;
+  --faint:#8B96A2;
+  --line:rgba(255,255,255,.08);
+  --red:#D9335A;
+  --red-deep:#9E1B32;
+  --green:#46B57A;
+  --tech:'Chakra Petch','PingFang SC','HarmonyOS Sans SC',sans-serif;
+  --cn:'PingFang SC','HarmonyOS Sans SC','MiSans','Microsoft YaHei',sans-serif;
+  --hud-h:60px;
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;overflow:hidden}
+body{
+  background:var(--bg);color:var(--ink);
+  font-family:var(--cn);
+  -webkit-font-smoothing:antialiased;
+}
+::selection{background:var(--red);color:#fff}
+
+/* ---------- 舞台 ---------- */
+#stage{
+  position:fixed;inset:0;overflow:hidden;
+  perspective:1200px;
+}
+#shaker{position:absolute;inset:0}
+#shaker.shaking{animation:shakeCam .42s linear}
+@keyframes shakeCam{
+  0%,100%{transform:translate(0,0)}
+  12%{transform:translate(-5px,3px)}
+  26%{transform:translate(5px,-4px)}
+  42%{transform:translate(-4px,-2px) rotate(.15deg)}
+  58%{transform:translate(4px,3px) rotate(-.12deg)}
+  74%{transform:translate(-3px,1px)}
+  88%{transform:translate(2px,-1px)}
+}
+
+/* ---------- 幻灯片 ---------- */
+.slide{
+  position:absolute;inset:0;
+  display:grid;place-content:center;
+  padding:calc(var(--hud-h) + 26px) 7vw calc(var(--hud-h) + 12px) 7vw;
+  visibility:hidden;
+  --rd:400ms;               /* 内容进场基础延迟：等无人机飞过 */
+  --gx:50%;--gy:20%;        /* 每页光斑位置 */
+}
+.slide.active,.slide.leaving{visibility:visible}
+/* 工程网格底纹 */
+.slide::before{
+  content:"";position:absolute;inset:0;z-index:-2;
+  background:
+    linear-gradient(rgba(255,255,255,.028) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(255,255,255,.028) 1px,transparent 1px);
+  background-size:72px 72px;
+  mask-image:radial-gradient(ellipse 90% 100% at 50% 40%,black 30%,transparent 100%);
+}
+/* 红色氛围光 */
+.slide::after{
+  content:"";position:absolute;inset:0;z-index:-3;pointer-events:none;
+  background:
+    radial-gradient(46% 40% at var(--gx) var(--gy),rgba(217,51,90,.16),transparent 70%),
+    radial-gradient(50% 36% at calc(100% - var(--gx)) calc(100% - var(--gy)),rgba(70,181,122,.07),transparent 70%);
+}
+
+/* ---------- 进出场 ---------- */
+.reveal{opacity:0}
+.slide.active .reveal{
+  animation:rise .9s cubic-bezier(.22,1,.36,1) both;
+  animation-delay:calc(var(--rd) + var(--i,0)*90ms);
+}
+@keyframes rise{
+  from{opacity:0;transform:translateY(38px);filter:blur(8px)}
+  to{opacity:1;transform:translateY(0);filter:blur(0)}
+}
+.slide.leaving .reveal{
+  animation:blown .5s cubic-bezier(.5,0,.9,.4) both;
+}
+#app[data-dir="next"] .slide.leaving .reveal{--bx:80px;--bsk:-10deg}
+#app[data-dir="prev"] .slide.leaving .reveal{--bx:-80px;--bsk:10deg}
+@keyframes blown{
+  to{opacity:0;transform:translateX(var(--bx,80px)) skewX(var(--bsk,-10deg)) scale(.98);filter:blur(14px)}
+}
+/* 封面字符拆分 */
+.split .ch{display:inline-block}
+.slide.active .split .ch{
+  animation:chRise .8s cubic-bezier(.22,1,.36,1) both;
+  animation-delay:calc(var(--rd) + var(--ci,0)*75ms);
+}
+@keyframes chRise{
+  from{opacity:0;transform:translateY(.55em) rotate(5deg) scale(.92);filter:blur(10px)}
+  to{opacity:1;transform:none;filter:blur(0)}
+}
+
+/* ---------- 通用元素 ---------- */
+.kicker{
+  display:inline-flex;align-items:center;gap:10px;
+  font-family:var(--tech);font-size:11px;letter-spacing:.42em;
+  color:var(--dim);text-transform:uppercase;
+}
+.kicker::before{content:"";width:26px;height:1px;background:var(--red)}
+.kicker b{color:var(--red);font-weight:600}
+h1,h2{font-weight:700;line-height:1.04;letter-spacing:.01em}
+.giant{font-size:clamp(58px,10.5vw,148px)}
+.big{font-size:clamp(38px,6vw,76px)}
+.sub-en{
+  font-family:var(--tech);font-weight:600;
+  letter-spacing:.5em;color:var(--dim);font-size:clamp(11px,1.2vw,14px);
+  text-transform:uppercase;
+}
+.accent{color:var(--red)}
+.note{
+  color:var(--faint);font-size:13.5px;letter-spacing:.08em;
+  border-left:2px solid var(--line);padding-left:14px;
+}
+.hud-chip{
+  display:inline-flex;align-items:center;gap:8px;
+  border:1px solid var(--line);border-radius:999px;
+  padding:7px 16px;font-size:12.5px;color:var(--dim);letter-spacing:.14em;
+  background:rgba(255,255,255,.02);backdrop-filter:blur(6px);
+}
+.hud-chip i{width:6px;height:6px;border-radius:50%;background:var(--green);
+  box-shadow:0 0 8px var(--green);animation:blink 1.6s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.25}}
+
+/* ============================================================
+   S1 封面
+   ============================================================ */
+.cover-wrap{display:grid;grid-template-columns:1.15fr .85fr;align-items:center;gap:4vw;width:100%}
+.cover-title{margin:22px 0 18px}
+.cover-title .fly-ch{color:var(--red);text-shadow:0 0 40px rgba(217,51,90,.5)}
+.cover-slogan{
+  display:inline-block;margin-top:26px;
+  font-size:clamp(17px,2vw,22px);letter-spacing:.3em;font-weight:600;
+  padding:12px 26px;border:1px solid rgba(217,51,90,.4);border-radius:4px;
+  background:linear-gradient(120deg,rgba(217,51,90,.12),transparent 60%);
+  box-shadow:inset 0 0 30px rgba(217,51,90,.06);
+}
+.cover-meta{display:flex;gap:14px;flex-wrap:wrap;margin-top:26px}
+.cover-right{position:relative;height:min(52vh,480px);display:grid;place-items:center}
+/* 雷达 */
+.radar{position:absolute;inset:0;display:grid;place-items:center;pointer-events:none}
+.radar span{
+  position:absolute;border-radius:50%;
+  border:1px solid rgba(217,51,90,.35);
+  animation:ping 3.6s cubic-bezier(.2,.6,.3,1) infinite;
+}
+.radar span:nth-child(1){width:34%;height:34%;animation-delay:0s}
+.radar span:nth-child(2){width:52%;height:52%;animation-delay:1.2s}
+.radar span:nth-child(3){width:70%;height:70%;animation-delay:2.4s}
+@keyframes ping{0%{transform:scale(.75);opacity:0}18%{opacity:.9}100%{transform:scale(1.18);opacity:0}}
+.radar .sweep{
+  width:70%;height:70%;border-radius:50%;
+  background:conic-gradient(from 0deg,rgba(217,51,90,.28),transparent 22%);
+  animation:sweep 3.6s linear infinite;border:none;
+  mask:radial-gradient(circle,black 30%,transparent 68%);
+}
+@keyframes sweep{to{transform:rotate(360deg)}}
+/* 盘旋无人机 */
+.hover-drone{
+  position:relative;z-index:2;
+  transform-style:preserve-3d;
+  transform:rotateY(var(--tx,0deg)) rotateX(var(--ty,0deg));
+  transition:transform .3s ease-out;
+}
+.hover-drone .bob{animation:bob 3.4s ease-in-out infinite}
+@keyframes bob{0%,100%{transform:translateY(-10px)}50%{transform:translateY(12px)}}
+.hover-drone svg{width:clamp(150px,15vw,220px);filter:drop-shadow(0 26px 34px rgba(0,0,0,.6))}
+.hint{
+  position:absolute;bottom:calc(var(--hud-h) + 6px);left:50%;transform:translateX(-50%);
+  font-family:var(--tech);font-size:11px;letter-spacing:.3em;color:var(--faint);
+  display:flex;align-items:center;gap:10px;white-space:nowrap;
+}
+.hint .arrow{animation:nudge 1.4s ease-in-out infinite;color:var(--red)}
+@keyframes nudge{0%,100%{transform:translateX(0);opacity:.4}50%{transform:translateX(7px);opacity:1}}
+
+/* ============================================================
+   S2 速览统计
+   ============================================================ */
+.stat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:18px;margin-top:44px;width:min(1100px,86vw)}
+.stat-card{
+  position:relative;border:1px solid var(--line);border-radius:8px;
+  padding:30px 26px 26px;background:linear-gradient(180deg,rgba(255,255,255,.03),transparent);
+  overflow:hidden;transition:border-color .35s,transform .35s,box-shadow .35s;
+}
+.stat-card:hover{border-color:rgba(217,51,90,.55);transform:translateY(-5px);box-shadow:0 18px 44px rgba(0,0,0,.45)}
+.stat-card::before{
+  content:attr(data-tag);position:absolute;top:14px;right:16px;
+  font-family:var(--tech);font-size:10px;letter-spacing:.28em;color:var(--faint);
+}
+.stat-card::after{
+  content:"";position:absolute;left:0;bottom:0;height:2px;width:100%;
+  background:linear-gradient(90deg,var(--red),transparent 70%);
+  transform:scaleX(0);transform-origin:left;transition:transform .45s;
+}
+.stat-card:hover::after{transform:scaleX(1)}
+.stat-num{
+  font-family:var(--tech);font-weight:700;
+  font-size:clamp(46px,5.6vw,74px);line-height:1;
+  display:flex;align-items:baseline;gap:6px;
+}
+.stat-num .unit{font-size:.32em;color:var(--dim);font-family:var(--cn);letter-spacing:.1em}
+.stat-label{margin-top:12px;font-size:14.5px;color:var(--ink);letter-spacing:.12em}
+.stat-sub{margin-top:5px;font-size:12.5px;color:var(--faint);letter-spacing:.06em}
+
+/* ============================================================
+   S3 为什么是深大
+   ============================================================ */
+.why-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:18px;margin-top:44px;width:min(1100px,86vw)}
+.why-card{
+  border:1px solid var(--line);border-radius:10px;padding:28px 24px;
+  background:rgba(255,255,255,.02);
+  transition:transform .4s cubic-bezier(.2,.8,.2,1),border-color .4s,background .4s;
+  position:relative;
+}
+.why-card:hover{transform:translateY(-7px) rotate(-.4deg);border-color:rgba(217,51,90,.5);background:rgba(217,51,90,.05)}
+.why-num{
+  font-family:var(--tech);font-weight:700;font-size:clamp(40px,4.6vw,58px);
+  color:var(--red);line-height:1;text-shadow:0 0 30px rgba(217,51,90,.35);
+}
+.why-unit{font-size:.34em;color:var(--dim);font-family:var(--cn);margin-left:4px;letter-spacing:.1em}
+.why-card h3{margin:16px 0 8px;font-size:17px;letter-spacing:.14em}
+.why-card p{font-size:13.5px;color:var(--dim);line-height:1.8;letter-spacing:.04em}
+.why-card .idx{
+  position:absolute;top:18px;right:18px;font-family:var(--tech);
+  font-size:11px;color:var(--faint);letter-spacing:.2em;
+}
+
+/* ============================================================
+   S4 三条内容线
+   ============================================================ */
+.flow-steps{display:grid;grid-template-columns:1fr auto 1fr auto 1fr;align-items:stretch;gap:0;margin-top:52px;width:min(1080px,86vw)}
+.flow-step{
+  border:1px solid var(--line);border-radius:12px;padding:34px 28px;
+  background:linear-gradient(180deg,rgba(255,255,255,.03),transparent);position:relative;
+  transition:transform .4s,border-color .4s;
+}
+.flow-step:hover{transform:translateY(-6px);border-color:rgba(217,51,90,.5)}
+.flow-step .fno{font-family:var(--tech);font-size:12px;color:var(--red);letter-spacing:.3em}
+.flow-step h3{font-size:clamp(26px,3vw,34px);margin:14px 0 10px;letter-spacing:.06em}
+.flow-step .fgoal{font-size:12.5px;color:var(--green);letter-spacing:.2em;margin-bottom:16px;font-family:var(--tech)}
+.flow-step ul{list-style:none}
+.flow-step li{font-size:13.5px;color:var(--dim);padding:5px 0 5px 20px;position:relative;letter-spacing:.05em}
+.flow-step li::before{content:"";position:absolute;left:0;top:12px;width:9px;height:1.5px;background:var(--red)}
+.flow-link{display:grid;place-items:center;padding:0 6px;min-width:64px}
+.flow-link svg{width:52px;height:20px;overflow:visible}
+.flow-link .ln{stroke:var(--line);stroke-width:1.5;stroke-dasharray:5 5;animation:dash 1.2s linear infinite}
+@keyframes dash{to{stroke-dashoffset:-20}}
+.flow-link .dt{fill:var(--red);filter:drop-shadow(0 0 6px rgba(217,51,90,.9));animation:flowdot 2.2s ease-in-out infinite}
+@keyframes flowdot{0%{transform:translateX(0);opacity:0}15%{opacity:1}85%{opacity:1}100%{transform:translateX(34px);opacity:0}}
+
+/* ============================================================
+   S5 场地动线
+   ============================================================ */
+.route-outer{width:min(1140px,86vw);margin-top:24px;overflow-x:auto;padding-bottom:8px}
+.route-box{min-width:980px;position:relative}
+.route-box svg.route{width:100%;height:auto;display:block}
+.route-box .rl{stroke:rgba(255,255,255,.16);stroke-width:2;fill:none}
+.route-box .rl2{stroke:var(--red);stroke-width:2;fill:none;stroke-dasharray:6 14;animation:dash 1.4s linear infinite}
+.route-dot circle.core{fill:var(--red)}
+.route-dot circle.halo{fill:none;stroke:rgba(217,51,90,.5);animation:halo 1.6s ease-out infinite}
+@keyframes halo{0%{stroke-width:2;r:6;opacity:.9}100%{stroke-width:.5;r:16;opacity:0}}
+.station{position:absolute;transform:translate(-50%,-50%);text-align:center}
+.station .st-dot{
+  width:12px;height:12px;margin:0 auto 10px;border-radius:50%;
+  background:var(--bg);border:2px solid var(--red);
+  box-shadow:0 0 14px rgba(217,51,90,.55);
+  position:relative;
+}
+.station .st-dot::after{
+  content:"";position:absolute;inset:-8px;border-radius:50%;
+  border:1px solid rgba(217,51,90,.35);animation:ping 2.8s ease-out infinite;
+}
+.station h4{font-size:15.5px;letter-spacing:.14em;white-space:nowrap}
+.station p{font-family:var(--tech);font-size:11px;color:var(--faint);letter-spacing:.18em;margin-top:4px;white-space:nowrap}
+.station small{display:block;margin-top:6px;font-size:11.5px;color:var(--dim);letter-spacing:.06em;white-space:nowrap}
+
+/* ============================================================
+   S6/S7 两天流程
+   ============================================================ */
+.tl{margin-top:46px;width:min(860px,84vw);position:relative}
+.tl::before{
+  content:"";position:absolute;left:108px;top:6px;bottom:6px;width:2px;
+  background:linear-gradient(180deg,var(--red) 0,var(--line) 30%,var(--line) 75%,transparent);
+}
+.tl-row{
+  display:grid;grid-template-columns:86px 44px 1fr;align-items:center;gap:0;
+  padding:15px 0;position:relative;
+}
+.tl-time{
+  font-family:var(--tech);font-weight:600;font-size:17px;color:var(--dim);
+  text-align:right;letter-spacing:.06em;padding-right:16px;
+  transition:color .3s;
+}
+.tl-row:hover .tl-time{color:var(--red)}
+.tl-node{position:relative;display:grid;place-items:center}
+.tl-node i{
+  width:11px;height:11px;border-radius:50%;
+  background:var(--bg);border:2px solid var(--faint);
+  transition:.3s;z-index:1;
+}
+.tl-row:hover .tl-node i{border-color:var(--red);box-shadow:0 0 14px rgba(217,51,90,.7);transform:scale(1.25)}
+.tl-node::before{content:"";position:absolute;left:50%;top:50%;width:26px;height:26px;border-radius:50%;border:1px solid transparent;transition:.3s;transform:translate(-50%,-50%)}
+.tl-row:hover .tl-node::before{border-color:rgba(217,51,90,.3)}
+.tl-what{
+  padding:13px 20px;border:1px solid transparent;border-radius:8px;
+  font-size:15.5px;letter-spacing:.06em;color:var(--ink);
+  display:flex;align-items:center;gap:14px;flex-wrap:wrap;
+  transition:.35s;
+}
+.tl-row:hover .tl-what{border-color:rgba(217,51,90,.35);background:rgba(217,51,90,.06);transform:translateX(6px)}
+.tl-what em{font-style:normal;font-family:var(--tech);font-size:11px;color:var(--red);letter-spacing:.24em;border:1px solid rgba(217,51,90,.4);border-radius:999px;padding:3px 10px}
+.tl-what .light{color:var(--dim);font-size:13px;letter-spacing:.04em}
+.day-tag{
+  display:inline-flex;align-items:center;gap:12px;margin-bottom:8px;
+  font-family:var(--tech);font-weight:700;font-size:13px;letter-spacing:.4em;color:var(--dim);
+}
+.day-tag b{color:var(--ink);font-size:clamp(30px,4vw,44px);letter-spacing:.06em;font-family:var(--cn)}
+.day-tag::after{content:"";width:180px;height:1px;background:linear-gradient(90deg,var(--red),transparent)}
+
+/* ============================================================
+   S8 编队表演
+   ============================================================ */
+.sky{--sky:1}
+#skySlide::before{
+  background:
+    radial-gradient(1px 1px at 12% 22%,rgba(255,255,255,.7) 50%,transparent 51%),
+    radial-gradient(1px 1px at 78% 12%,rgba(255,255,255,.55) 50%,transparent 51%),
+    radial-gradient(1.5px 1.5px at 64% 68%,rgba(255,255,255,.5) 50%,transparent 51%),
+    radial-gradient(1px 1px at 32% 78%,rgba(255,255,255,.65) 50%,transparent 51%),
+    radial-gradient(1px 1px at 88% 44%,rgba(255,255,255,.45) 50%,transparent 51%),
+    radial-gradient(1.5px 1.5px at 45% 15%,rgba(255,255,255,.6) 50%,transparent 51%),
+    linear-gradient(rgba(255,255,255,.02) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(255,255,255,.02) 1px,transparent 1px);
+  background-size:300px 300px,300px 300px,300px 300px,300px 300px,300px 300px,300px 300px,72px 72px,72px 72px;
+  animation:twinkle 5s ease-in-out infinite alternate;
+}
+@keyframes twinkle{0%{opacity:.6}100%{opacity:1}}
+.form-wrap{display:grid;grid-template-columns:.9fr 1.1fr;align-items:center;gap:5vw;width:min(1120px,88vw)}
+.fleet{position:relative;height:min(46vh,420px)}
+.m-drone{
+  position:absolute;transform:translate(-50%,-50%);
+  animation:floatY var(--fd,3s) ease-in-out var(--fdel,0s) infinite;
+}
+@keyframes floatY{0%,100%{margin-top:0}50%{margin-top:-14px}}
+.m-drone svg{width:clamp(28px,3vw,40px);display:block;filter:drop-shadow(0 6px 10px rgba(0,0,0,.7))}
+.m-drone .ring{
+  position:absolute;inset:-14px;border-radius:50%;
+  border:1px dashed rgba(217,51,90,.4);
+  animation:sweep 7s linear infinite;
+}
+.m-drone .led{
+  position:absolute;left:50%;bottom:-9px;width:5px;height:5px;border-radius:50%;
+  transform:translateX(-50%);
+}
+.m-drone .led.r{background:#FF4D6A;box-shadow:0 0 8px 1px #FF4D6A;animation:blink 1s infinite}
+.m-drone .led.g{background:var(--green);box-shadow:0 0 8px 1px var(--green);animation:blink 1.4s .5s infinite}
+.swarm-path{
+  position:absolute;left:0;right:0;bottom:4%;height:1px;
+  background:repeating-linear-gradient(90deg,var(--red) 0 6px,transparent 6px 16px);
+  opacity:.35;
+}
+.fleet-15{
+  font-family:var(--tech);font-weight:700;font-size:clamp(80px,11vw,150px);line-height:.9;
+  color:var(--red);text-shadow:0 0 60px rgba(217,51,90,.45);
+}
+.fleet-15 small{font-size:.3em;color:var(--ink);font-family:var(--cn);letter-spacing:.2em;display:block;margin-top:10px}
+.fleet-points{list-style:none;margin-top:26px}
+.fleet-points li{
+  display:flex;gap:12px;align-items:baseline;padding:8px 0;
+  font-size:14.5px;color:var(--dim);letter-spacing:.05em;
+}
+.fleet-points li b{color:var(--ink);font-family:var(--tech);letter-spacing:.1em;min-width:96px;font-weight:600}
+.fleet-points li b.red{color:var(--red)}
+
+/* ============================================================
+   S9 冠名权益
+   ============================================================ */
+.rights-wrap{display:grid;grid-template-columns:auto 1fr;gap:5vw;align-items:center;width:min(1120px,88vw);margin-top:10px}
+.rights-12{
+  font-family:var(--tech);font-weight:700;font-size:clamp(110px,17vw,220px);line-height:.9;
+  color:transparent;-webkit-text-stroke:2px rgba(217,51,90,.85);
+  text-shadow:0 0 70px rgba(217,51,90,.25);
+}
+.rights-12 small{display:block;-webkit-text-stroke:0;color:var(--dim);font-family:var(--cn);font-size:15px;letter-spacing:.4em;margin-top:14px}
+.rights-wrap2{display:grid;grid-template-columns:auto 1fr;gap:5vw;align-items:center}
+.rights-wrap3{display:grid;grid-template-columns:auto 1fr;gap:5vw;align-items:center;margin-top:30px}
+.chips{display:flex;flex-wrap:wrap;gap:10px;max-width:640px}
+.chip{
+  border:1px solid var(--line);border-radius:999px;padding:9px 18px;
+  font-size:13.5px;color:var(--dim);letter-spacing:.08em;
+  transition:.3s;cursor:default;background:rgba(255,255,255,.02);
+}
+.chip:hover{border-color:var(--red);color:var(--ink);transform:translateY(-3px);box-shadow:0 8px 22px rgba(217,51,90,.18)}
+.chip.hot{color:var(--red);border-color:rgba(217,51,90,.5)}
+.plans{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:30px;max-width:640px}
+.plan{
+  border:1px solid var(--line);border-radius:8px;padding:16px 14px;
+  font-size:12.5px;color:var(--dim);letter-spacing:.06em;line-height:1.7;
+  background:rgba(255,255,255,.02);transition:.3s;
+}
+.plan b{display:block;font-family:var(--tech);color:var(--ink);letter-spacing:.2em;font-size:13px;margin-bottom:6px}
+.plan:hover{border-color:var(--green);transform:translateY(-4px)}
+.excl{
+  margin-top:24px;font-size:12.5px;color:var(--faint);letter-spacing:.05em;
+  border:1px dashed rgba(217,51,90,.35);border-radius:8px;padding:13px 18px;max-width:640px;
+  background:rgba(217,51,90,.04);
+}
+.excl b{color:var(--red)}
+
+/* ============================================================
+   S10 财务预算
+   ============================================================ */
+.fin-wrap{width:min(1080px,88vw);margin-top:6px}
+.fin-head{display:flex;align-items:center;gap:34px;flex-wrap:wrap;margin-top:4px}
+.fin-total{
+  font-family:var(--tech);font-weight:700;
+  font-size:clamp(54px,6.5vw,86px);line-height:.92;
+  color:var(--red);text-shadow:0 0 46px rgba(217,51,90,.4);
+  display:flex;align-items:baseline;gap:14px;
+}
+.fin-total .yuan{font-size:.4em;color:var(--ink);font-family:var(--cn)}
+.fin-total .cap{font-family:var(--cn);font-size:14px;color:var(--dim);letter-spacing:.3em;font-weight:400;text-shadow:none;max-width:220px;line-height:1.7}
+.bars{margin-top:34px;display:flex;flex-direction:column;gap:15px}
+.bar-row{display:grid;grid-template-columns:168px 1fr 128px;gap:18px;align-items:center}
+.bar-row .bl{font-size:14.5px;color:var(--ink);letter-spacing:.1em;white-space:nowrap}
+.bar-row .bl small{display:block;font-family:var(--tech);font-size:10px;color:var(--faint);letter-spacing:.22em;margin-top:3px}
+.bar-track{height:13px;border-radius:3px;background:rgba(255,255,255,.05);border:1px solid var(--line);position:relative;overflow:hidden}
+.bar-fill{
+  position:absolute;inset:0;width:calc(var(--w)*100%);
+  background:linear-gradient(90deg,var(--red-deep),var(--red));
+  box-shadow:0 0 16px rgba(217,51,90,.4);
+}
+.slide.active .bar-fill{animation:grow 1.1s cubic-bezier(.22,1,.36,1) both;animation-delay:calc(var(--rd) + 420ms + var(--i,0)*95ms)}
+.bar-amt{font-family:var(--tech);font-weight:700;font-size:clamp(17px,1.8vw,22px);text-align:right;white-space:nowrap}
+.bar-amt i{font-style:normal;font-size:.62em;color:var(--faint);font-family:var(--cn)}
+.fin-detail{margin-top:22px;display:flex;flex-wrap:wrap;gap:9px}
+.f-chip{
+  border:1px solid var(--line);border-radius:999px;padding:7px 15px;
+  font-size:12.5px;color:var(--dim);letter-spacing:.04em;
+  background:rgba(255,255,255,.02);transition:.3s;
+}
+.f-chip:hover{border-color:rgba(217,51,90,.5);color:var(--ink)}
+.f-chip b{color:var(--red);font-family:var(--tech);font-weight:700;margin:0 3px}
+.f-chip b.free{color:var(--green)}
+.fin-foot{display:grid;grid-template-columns:repeat(3,1fr);gap:13px;margin-top:24px}
+.fin-card{
+  border:1px solid var(--line);border-radius:10px;padding:17px 19px;
+  background:rgba(255,255,255,.02);transition:.3s;
+}
+.fin-card:hover{border-color:rgba(70,181,122,.45);transform:translateY(-3px)}
+.fin-card .no{font-family:var(--tech);font-size:10.5px;color:var(--green);letter-spacing:.26em}
+.fin-card .no.r{color:var(--red)}
+.fin-card p{margin-top:9px;font-size:14px;color:var(--ink);letter-spacing:.05em}
+.fin-card p b{font-family:var(--tech);color:var(--red)}
+.fin-card small{display:block;margin-top:5px;font-size:12px;color:var(--dim);line-height:1.65;letter-spacing:.03em}
+
+/* ============================================================
+   S11 效果预估
+   ============================================================ */
+.kpi-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-top:44px;width:min(1000px,86vw)}
+.kpi{
+  border:1px solid var(--line);border-radius:10px;padding:26px;
+  background:linear-gradient(160deg,rgba(255,255,255,.035),transparent 60%);
+  position:relative;overflow:hidden;transition:.35s;
+}
+.kpi:hover{border-color:rgba(217,51,90,.5);transform:translateY(-4px)}
+.kpi::before{
+  content:attr(data-no);position:absolute;top:12px;right:14px;
+  font-family:var(--tech);font-size:10px;color:var(--faint);letter-spacing:.2em;
+}
+.kpi .stat-num{font-size:clamp(38px,4.6vw,60px)}
+.kpi .bar{height:3px;border-radius:2px;background:rgba(255,255,255,.06);margin-top:18px;overflow:hidden}
+.kpi .bar i{display:block;height:100%;width:100%;background:linear-gradient(90deg,var(--red-deep),var(--red));transform:scaleX(0);transform-origin:left}
+.slide.active .kpi .bar i{animation:grow 1.2s cubic-bezier(.22,1,.36,1) forwards;animation-delay:calc(var(--rd) + 500ms + var(--i,0)*80ms)}
+@keyframes grow{to{transform:scaleX(var(--w,1))}}
+
+/* ============================================================
+   S11 尾页
+   ============================================================ */
+.end-wrap{text-align:center;width:100%;position:relative}
+.end-title{
+  font-size:clamp(40px,7.5vw,96px);font-weight:700;line-height:1.3;letter-spacing:.06em;
+}
+.end-title .accent{text-shadow:0 0 46px rgba(217,51,90,.55)}
+.end-cols{display:flex;gap:clamp(20px,4vw,60px);justify-content:center;margin-top:52px;flex-wrap:wrap}
+.end-col{border:1px solid var(--line);border-radius:10px;padding:22px 30px;min-width:220px;background:rgba(255,255,255,.02);transition:.3s}
+.end-col:hover{border-color:rgba(217,51,90,.45);transform:translateY(-4px)}
+.end-col .no{font-family:var(--tech);font-size:11px;color:var(--red);letter-spacing:.3em}
+.end-col p{margin-top:10px;font-size:15px;letter-spacing:.1em}
+.end-col small{display:block;margin-top:6px;color:var(--faint);font-size:12px;letter-spacing:.04em}
+.end-cta{
+  display:inline-flex;align-items:center;gap:14px;margin-top:54px;
+  font-size:16px;letter-spacing:.3em;font-weight:600;color:var(--ink);
+  border:1px solid rgba(217,51,90,.55);border-radius:999px;padding:16px 42px;
+  background:linear-gradient(120deg,rgba(217,51,90,.16),rgba(217,51,90,.03));
+  cursor:pointer;position:relative;overflow:hidden;transition:.35s;
+}
+.end-cta::before{
+  content:"";position:absolute;inset:0;
+  background:linear-gradient(120deg,transparent 30%,rgba(255,255,255,.14) 50%,transparent 70%);
+  transform:translateX(-100%);transition:transform .6s;
+}
+.end-cta:hover{box-shadow:0 0 44px rgba(217,51,90,.4);transform:translateY(-3px)}
+.end-cta:hover::before{transform:translateX(100%)}
+.end-cta svg{width:20px;height:14px}
+.end-cta svg path{stroke:var(--red);stroke-width:2;fill:none;stroke-dasharray:60;animation:dash 1.6s linear infinite}
+.takeoff-zone{position:absolute;left:50%;bottom:-8vh;transform:translateX(-50%);pointer-events:none;z-index:-1}
+.takeoff{
+  animation:takeoff 3.2s cubic-bezier(.6,0,.8,.4) infinite;
+}
+@keyframes takeoff{
+  0%{transform:translateY(12vh) scale(.7);opacity:0}
+  18%{opacity:1}
+  60%{opacity:.9}
+  100%{transform:translateY(-46vh) scale(1.05);opacity:0}
+}
+.takeoff svg{width:84px;filter:drop-shadow(0 10px 18px rgba(0,0,0,.6))}
+
+/* ============================================================
+   HUD 顶栏 / 底栏
+   ============================================================ */
+.hud{
+  position:absolute;left:0;right:0;z-index:30;
+  padding:0 clamp(20px,4vw,56px);
+  display:flex;align-items:center;justify-content:space-between;
+  pointer-events:none;
+}
+.hud > *{pointer-events:auto}
+.hud-top{top:0;height:var(--hud-h);border-bottom:1px solid var(--line)}
+.hud-bottom{bottom:0;height:var(--hud-h);border-top:1px solid var(--line);gap:22px}
+.brand{
+  display:flex;align-items:center;gap:12px;
+  font-size:13.5px;letter-spacing:.2em;font-weight:600;
+}
+.brand .mark{
+  width:13px;height:13px;background:var(--red);
+  clip-path:polygon(50% 0,100% 50%,50% 100%,0 50%);
+  box-shadow:0 0 12px rgba(217,51,90,.7);
+  animation:spinMark 6s linear infinite;
+}
+@keyframes spinMark{to{transform:rotate(360deg)}}
+.brand em{font-style:normal;color:var(--red);font-family:var(--tech)}
+.brand small{color:var(--faint);font-size:11px;letter-spacing:.3em;font-weight:400}
+.hud-date{font-family:var(--tech);font-size:11.5px;letter-spacing:.28em;color:var(--dim)}
+.counter{
+  font-family:var(--tech);font-size:13px;color:var(--dim);letter-spacing:.18em;
+  display:flex;align-items:baseline;gap:6px;white-space:nowrap;
+}
+.counter b{font-size:19px;color:var(--ink);font-weight:700}
+.counter .lb{color:var(--red);font-size:11px;letter-spacing:.34em}
+.progress{
+  position:relative;flex:1;height:1px;background:rgba(255,255,255,.14);
+  margin:0 10px;max-width:520px;
+}
+.progress .p-fill{
+  position:absolute;left:0;top:0;height:100%;width:calc(var(--p,0)*100%);
+  background:linear-gradient(90deg,var(--red-deep),var(--red));
+  box-shadow:0 0 10px rgba(217,51,90,.6);transition:width .8s cubic-bezier(.22,1,.36,1);
+}
+.progress .p-dash{
+  position:absolute;left:0;right:0;top:0;height:100%;
+  background:repeating-linear-gradient(90deg,transparent 0 10px,rgba(255,255,255,.06) 10px 11px);
+}
+.p-marker{
+  position:absolute;top:50%;left:calc(var(--p,0)*100%);
+  transform:translate(-50%,-50%) rotate(45deg);
+  width:13px;height:13px;background:var(--red);
+  clip-path:polygon(50% 0,100% 50%,50% 100%,0 50%);
+  box-shadow:0 0 16px rgba(217,51,90,.8);
+  transition:left .8s cubic-bezier(.22,1,.36,1);
+}
+.nav-btns{display:flex;gap:10px}
+.nav-btns button{
+  width:38px;height:38px;border-radius:6px;
+  border:1px solid var(--line);background:rgba(255,255,255,.03);
+  color:var(--ink);font-size:17px;cursor:pointer;
+  transition:.3s;font-family:var(--tech);
+}
+.nav-btns button:hover{border-color:var(--red);color:var(--red);box-shadow:0 0 18px rgba(217,51,90,.3);transform:translateY(-2px)}
+.nav-btns button:active{transform:translateY(0) scale(.94)}
+
+/* ---------- 右侧圆点导航 ---------- */
+#dots{
+  position:absolute;right:clamp(14px,2.4vw,34px);top:50%;transform:translateY(-50%);
+  display:flex;flex-direction:column;gap:14px;z-index:31;
+}
+#dots .dot{
+  position:relative;width:9px;height:9px;flex:none;
+  background:rgba(255,255,255,.18);border:none;cursor:pointer;
+  transform:rotate(45deg);transition:.35s;padding:0;
+}
+#dots .dot::after{
+  content:attr(data-label);
+  position:absolute;right:22px;top:50%;transform:translateY(-50%) rotate(-45deg);
+  transform-origin:right center;
+  font-size:11px;letter-spacing:.24em;color:var(--dim);
+  white-space:nowrap;opacity:0;transition:.3s;pointer-events:none;
+}
+#dots .dot:hover::after{opacity:1;color:var(--ink)}
+#dots .dot:hover{background:rgba(217,51,90,.6)}
+#dots .dot.on{background:var(--red);box-shadow:0 0 12px rgba(217,51,90,.9);transform:rotate(45deg) scale(1.3)}
+
+/* ============================================================
+   无人机穿场转场（核心动画）
+   ============================================================ */
+#flyLayer{
+  position:fixed;inset:0;z-index:60;pointer-events:none;overflow:hidden;
+  opacity:0;
+}
+#flyLayer.on{opacity:1}
+.drone-x{position:absolute;left:0;top:0;will-change:transform}
+.drone-x.fly{animation:flyX .95s cubic-bezier(.32,.55,.28,.98) both}
+@keyframes flyX{
+  0%{transform:translate(-34vw,24vh) rotate(16deg) scale(.72);opacity:0}
+  9%{opacity:1}
+  46%{transform:translate(46vw,46vh) rotate(-1deg) scale(1.22)}
+  56%{transform:translate(58vw,44vh) rotate(-3deg) scale(1.24)}
+  88%{opacity:1}
+  100%{transform:translate(138vw,14vh) rotate(-18deg) scale(.8);opacity:0}
+}
+#flyLayer[data-dir="prev"] .drone-inner{transform:scaleX(-1)}
+.drone-inner{position:relative;width:clamp(150px,16vw,230px)}
+.drone-inner svg{display:block;width:100%;filter:drop-shadow(0 30px 40px rgba(0,0,0,.55))}
+.d-trail{
+  position:absolute;top:50%;right:82%;width:46vw;height:110px;
+  transform:translateY(-50%) skewY(-6deg);
+  background:linear-gradient(90deg,transparent,rgba(217,51,90,.06) 40%,rgba(255,255,255,.16) 92%,rgba(255,255,255,.3));
+  filter:blur(9px);border-radius:50%;
+  animation:trailPulse .95s ease-out both;
+}
+@keyframes trailPulse{0%{opacity:0;transform:translateY(-50%) skewY(-6deg) scaleX(.1)}25%{opacity:1}100%{opacity:.9;transform:translateY(-50%) skewY(-6deg) scaleX(1)}}
+.prop-blades{
+  transform-box:fill-box;transform-origin:50% 50%;
+  animation:spin .14s linear infinite;
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+.led-nav{animation:blink .9s infinite}
+
+/* 速度线 */
+#speedlines{position:fixed;inset:0;z-index:55;pointer-events:none;overflow:hidden}
+#speedlines span{
+  position:absolute;height:1px;width:34vw;
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,.5),transparent);
+  opacity:0;left:-40vw;
+}
+#speedlines.go span{animation:streak .55s cubic-bezier(.3,.5,.3,1) both}
+#speedlines span:nth-child(1){top:24%;animation-delay:.02s}
+#speedlines span:nth-child(2){top:47%;width:52vw;animation-delay:.06s}
+#speedlines span:nth-child(3){top:69%;width:26vw;animation-delay:.1s}
+#speedlines span:nth-child(4){top:86%;width:44vw;animation-delay:.14s}
+@keyframes streak{0%{opacity:0;transform:translateX(0)}12%{opacity:1}100%{opacity:0;transform:translateX(150vw)}}
+
+/* 桨风气流带 */
+#wash{
+  position:fixed;left:0;right:0;top:calc(50% - 70px);height:140px;z-index:54;
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,.07) 30%,rgba(217,51,90,.1) 55%,transparent);
+  filter:blur(18px);opacity:0;pointer-events:none;
+  transform:scaleX(0);
+}
+#wash.go{animation:washOut .8s ease-out both}
+@keyframes washOut{0%{opacity:0;transform:scaleX(.05)}30%{opacity:1}100%{opacity:0;transform:scaleX(1)}}
+
+/* ---------- 全局氛围层 ---------- */
+#grain{
+  position:fixed;inset:0;z-index:70;pointer-events:none;opacity:.05;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)' opacity='0.6'/%3E%3C/svg%3E");
+}
+#scan{
+  position:fixed;inset:0;z-index:69;pointer-events:none;opacity:.5;
+  background:repeating-linear-gradient(0deg,transparent 0 3px,rgba(255,255,255,.011) 3px 4px);
+}
+#vignette{
+  position:fixed;inset:0;z-index:68;pointer-events:none;
+  background:radial-gradient(120% 90% at 50% 50%,transparent 60%,rgba(0,0,0,.55));
+}
+
+/* ---------- 响应式 ---------- */
+@media (max-width:960px){
+  .cover-wrap{grid-template-columns:1fr}
+  .cover-right{display:none}
+  .stat-grid,.why-grid{grid-template-columns:repeat(2,1fr)}
+  .flow-steps{grid-template-columns:1fr;gap:14px}
+  .flow-link{transform:rotate(90deg);min-height:44px}
+  .form-wrap{grid-template-columns:1fr}
+  .rights-wrap{grid-template-columns:1fr;gap:26px;text-align:center}
+  .rights-12{font-size:clamp(90px,24vw,140px)}
+  .chips{justify-content:center}
+  .plans{grid-template-columns:repeat(2,1fr)}
+  .kpi-grid{grid-template-columns:repeat(2,1fr)}
+  .fin-foot{grid-template-columns:1fr}
+  .bar-row{grid-template-columns:112px 1fr 84px;gap:12px}
+  .bar-row .bl{font-size:12.5px}
+  #dots{display:none}
+  .hud-date{display:none}
+  .hint{display:none}
+}
+@media (max-width:560px){
+  .stat-grid,.why-grid,.kpi-grid{grid-template-columns:1fr 1fr}
+  .slide{padding-left:6vw;padding-right:6vw}
+  .counter .lb{display:none}
+  .tl::before{left:58px}
+  .tl-time{font-size:13px}
+  .tl-row{grid-template-columns:60px 36px 1fr}
+}
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
+}
+</style>
+</head>
+<body>
+<div id="app" data-dir="next">
+
+  <div id="stage">
+    <div id="shaker">
+
+      <!-- ============ S1 封面 ============ -->
+      <section class="slide" id="slide-cover" data-label="蓝图" style="--gx:18%;--gy:24%;--rd:150ms">
+        <div class="cover-wrap">
+          <div>
+            <div class="reveal kicker" style="--i:0">校企合作 · 活动策划案 <b>V1.0</b></div>
+            <h1 class="giant cover-title">
+              <span class="split reveal" style="--i:1">未来</span><span class="split reveal fly-ch" style="--i:2">飞行家</span>
+            </h1>
+            <div class="reveal sub-en" style="--i:3">Future Pilot · SZU 2026</div>
+            <div class="reveal" style="--i:4;margin-top:26px;font-size:clamp(15px,1.8vw,20px);letter-spacing:.28em;color:var(--dim)">
+              DJI 大疆 <span class="accent">×</span> 深圳大学 · 校园科技创新体验日
+            </div>
+            <div class="reveal cover-slogan" style="--i:5">先飞一次，再谈未来。</div>
+            <div class="reveal cover-meta" style="--i:6">
+              <span class="hud-chip"><i></i>2026.11.21 — 22</span>
+              <span class="hud-chip">粤海校区 · 南区草坪</span>
+              <span class="hud-chip">大疆独家冠名</span>
+            </div>
+          </div>
+          <div class="cover-right reveal" style="--i:4">
+            <div class="radar"><span></span><span></span><span></span><div class="sweep"></div></div>
+            <div class="hover-drone" id="hoverDrone">
+              <div class="bob">
+                <svg viewBox="0 0 200 200" aria-hidden="true">
+                  <defs>
+                    <radialGradient id="cBody" cx="38%" cy="30%"><stop offset="0%" stop-color="#2A313B"/><stop offset="100%" stop-color="#141920"/></radialGradient>
+                  </defs>
+                  <g stroke="#39424E" stroke-width="9" stroke-linecap="round">
+                    <line x1="100" y1="100" x2="42" y2="42"/><line x1="100" y1="100" x2="158" y2="42"/>
+                    <line x1="100" y1="100" x2="42" y2="158"/><line x1="100" y1="100" x2="158" y2="158"/>
+                  </g>
+                  <g transform="translate(42,42)"><circle r="30" fill="none" stroke="rgba(255,255,255,.22)" stroke-width="1.5"/>
+                    <g class="prop-blades"><ellipse rx="27" ry="3.4" fill="rgba(238,242,246,.8)"/><ellipse rx="27" ry="3.4" fill="rgba(238,242,246,.55)" transform="rotate(90)"/></g>
+                    <circle r="4.5" fill="#20262E" stroke="rgba(255,255,255,.3)"/></g>
+                  <g transform="translate(158,42)"><circle r="30" fill="none" stroke="rgba(255,255,255,.22)" stroke-width="1.5"/>
+                    <g class="prop-blades"><ellipse rx="27" ry="3.4" fill="rgba(238,242,246,.8)"/><ellipse rx="27" ry="3.4" fill="rgba(238,242,246,.55)" transform="rotate(90)"/></g>
+                    <circle r="4.5" fill="#20262E" stroke="rgba(255,255,255,.3)"/></g>
+                  <g transform="translate(42,158)"><circle r="30" fill="none" stroke="rgba(255,255,255,.22)" stroke-width="1.5"/>
+                    <g class="prop-blades"><ellipse rx="27" ry="3.4" fill="rgba(238,242,246,.8)"/><ellipse rx="27" ry="3.4" fill="rgba(238,242,246,.55)" transform="rotate(90)"/></g>
+                    <circle r="4.5" fill="#20262E" stroke="rgba(255,255,255,.3)"/></g>
+                  <g transform="translate(158,158)"><circle r="30" fill="none" stroke="rgba(255,255,255,.22)" stroke-width="1.5"/>
+                    <g class="prop-blades"><ellipse rx="27" ry="3.4" fill="rgba(238,242,246,.8)"/><ellipse rx="27" ry="3.4" fill="rgba(238,242,246,.55)" transform="rotate(90)"/></g>
+                    <circle r="4.5" fill="#20262E" stroke="rgba(255,255,255,.3)"/></g>
+                  <rect x="64" y="64" width="72" height="72" rx="20" fill="url(#cBody)" stroke="rgba(255,255,255,.14)"/>
+                  <rect x="78" y="78" width="44" height="44" rx="13" fill="#1B2129" stroke="rgba(255,255,255,.1)"/>
+                  <rect x="80" y="96" width="40" height="5" rx="2.5" fill="#D9335A" opacity=".9"/>
+                  <circle cx="100" cy="100" r="12" fill="#0F1418" stroke="rgba(255,255,255,.2)"/>
+                  <circle cx="100" cy="100" r="6" fill="#243240"/>
+                  <circle cx="100" cy="98.4" r="2" fill="#D9335A" class="led-nav"/>
+                </svg>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="hint">按键 / 滚轮 / 滑动 翻页 <span class="arrow">→→</span> 注意无人机</div>
+      </section>
+
+      <!-- ============ S2 速览 ============ -->
+      <section class="slide" data-label="速览" style="--gx:75%;--gy:18%">
+        <div class="reveal kicker" style="--i:0">方案摘要 <b>Overview</b></div>
+        <h2 class="big reveal" style="--i:1;margin-top:16px">把南区草坪，变成<span class="accent">能上手飞</span>的体验场</h2>
+        <div class="stat-grid">
+          <div class="reveal stat-card" style="--i:2" data-tag="TIME">
+            <div class="stat-num"><span data-count="2">0</span><span class="unit">天</span></div>
+            <div class="stat-label">周六 + 周日</div>
+            <div class="stat-sub">三摊位 · 一条环形动线</div>
+          </div>
+          <div class="reveal stat-card" style="--i:3" data-tag="SCALE">
+            <div class="stat-num"><span data-count="500">0</span><span class="unit">人</span></div>
+            <div class="stat-label">累计到场</div>
+            <div class="stat-sub">理工科 &amp; 创业学生</div>
+          </div>
+          <div class="reveal stat-card" style="--i:4" data-tag="CASH">
+            <div class="stat-num"><span data-count="3000">0</span><span class="unit">元</span></div>
+            <div class="stat-label">现金赞助 · 基准档 C</div>
+            <div class="stat-sub">三档可选 5000 / 4000 / 3000</div>
+          </div>
+          <div class="reveal stat-card" style="--i:5" data-tag="POOL">
+            <div class="stat-num"><span data-count="12">0</span><span class="unit">万元</span></div>
+            <div class="stat-label">双方资源池</div>
+            <div class="stat-sub">贵司样机人力 ≈ 6–7 万</div>
+          </div>
+        </div>
+        <div class="reveal note" style="--i:6;margin-top:26px">从「看见」到「飞过」，再到「想加入」—— 200 米内完成全部动作</div>
+      </section>
+
+      <!-- ============ S3 为什么是深大 ============ -->
+      <section class="slide" data-label="缘由" style="--gx:20%;--gy:70%">
+        <div class="reveal kicker" style="--i:0">为什么是深大 <b>Why SZU</b></div>
+        <h2 class="big reveal" style="--i:1;margin-top:16px">同样的投入，<span class="accent">这里能起飞</span></h2>
+        <div class="why-grid">
+          <div class="reveal why-card" style="--i:2"><span class="idx">01</span>
+            <div class="why-num">15<span class="why-unit">分钟</span></div>
+            <h3>同城即达</h3>
+            <p>天空之城 → 粤海校区。样机当天调拨，工程师当天到场，零运输住宿成本。</p>
+          </div>
+          <div class="reveal why-card" style="--i:3"><span class="idx">02</span>
+            <div class="why-num">4<span class="why-unit">个学院</span></div>
+            <h3>人才就在楼下</h3>
+            <p>计软 / 电信 / 机电 / 物光教学楼群紧邻场地，正处校招动线。</p>
+          </div>
+          <div class="reveal why-card" style="--i:4"><span class="idx">03</span>
+            <div class="why-num">11<span class="why-unit">月</span></div>
+            <h3>最佳户外窗口</h3>
+            <p>深圳 20–26℃，降雨概率低。夜间编队、露天放映稳定落地。</p>
+          </div>
+          <div class="reveal why-card" style="--i:5"><span class="idx">04</span>
+            <div class="why-num">1<span class="why-unit">种基因</span></div>
+            <h3>创业是默认选项</h3>
+            <p>深大校友创办腾讯。工程师文化 × 创业叙事，学生听到的是「我也可以」。</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ S4 三条内容线 ============ -->
+      <section class="slide" data-label="内容线" style="--gx:50%;--gy:80%">
+        <div class="reveal kicker" style="--i:0">内容结构 <b>3 Lines</b></div>
+        <h2 class="big reveal" style="--i:1;margin-top:16px">从看见，<span class="accent">到留下</span></h2>
+        <div class="flow-steps">
+          <div class="reveal flow-step" style="--i:2">
+            <div class="fno">LINE — 01</div>
+            <h3>看得见</h3>
+            <div class="fgoal">目标 · 品牌认知与话题</div>
+            <ul><li>新品技术展台</li><li>15 机编队飞行</li><li>航拍大片露天放映</li></ul>
+          </div>
+          <div class="reveal flow-link" style="--i:3" aria-hidden="true">
+            <svg viewBox="0 0 52 20"><path class="ln" d="M2 10 H46"/><path class="dt" d="M40 4 l8 6 -8 6 z"/></svg>
+          </div>
+          <div class="reveal flow-step" style="--i:4">
+            <div class="fno">LINE — 02</div>
+            <h3>玩得到</h3>
+            <div class="fgoal">目标 · 产品体验与口碑</div>
+            <ul><li>起飞教学 · 实操飞行</li><li>Avata 2 沉浸体验</li><li>航拍构图挑战赛</li></ul>
+          </div>
+          <div class="reveal flow-link" style="--i:5" aria-hidden="true">
+            <svg viewBox="0 0 52 20"><path class="ln" d="M2 10 H46"/><path class="dt" d="M40 4 l8 6 -8 6 z"/></svg>
+          </div>
+          <div class="reveal flow-step" style="--i:6">
+            <div class="fno">LINE — 03</div>
+            <h3>留下来</h3>
+            <div class="fgoal">目标 · 校招线索与长期关系</div>
+            <ul><li>简历登记 · 一对一初面</li><li>专场宣讲会</li><li>社群沉淀 · 后续活动</li></ul>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ S5 场地动线 ============ -->
+      <section class="slide" data-label="动线" style="--gx:80%;--gy:30%" id="slide-route">
+        <div class="reveal kicker" style="--i:0">场地与动线 <b>Campus Flow</b></div>
+        <h2 class="big reveal" style="--i:1;margin-top:16px">200 米，<span class="accent">单向环形动线</span></h2>
+        <div class="route-outer reveal" style="--i:2">
+          <div class="route-box" style="height:min(340px,38vh)">
+            <svg class="route" viewBox="0 0 1200 320" preserveAspectRatio="xMidYMid meet">
+              <path class="rl" d="M80,250 C170,180 260,150 340,150 S520,255 600,255 S780,145 860,145 S1040,210 1120,210"/>
+              <path class="rl2" id="routePath" d="M80,250 C170,180 260,150 340,150 S520,255 600,255 S780,145 860,145 S1040,210 1120,210"/>
+              <g class="route-dot" id="routeDot">
+                <circle class="halo" r="6"/>
+                <circle class="core" r="4"/>
+              </g>
+            </svg>
+            <div class="station" style="left:6.6%;top:78%">
+              <div class="st-dot"></div><h4>入口 · 签到打卡</h4><p>CHECK-IN</p><small>领「飞行护照」集章卡</small>
+            </div>
+            <div class="station" style="left:28.3%;top:46%">
+              <div class="st-dot"></div><h4>A 区 · 看展</h4><p>18㎡ · EXHIBIT</p><small>最新机型 + 整点讲解</small>
+            </div>
+            <div class="station" style="left:50%;top:79%">
+              <div class="st-dot"></div><h4>B 区 · 体验</h4><p>48㎡ · FLY</p><small>围网隔离 · 三段式体验</small>
+            </div>
+            <div class="station" style="left:71.6%;top:45%">
+              <div class="st-dot"></div><h4>C 区 · 招聘</h4><p>12㎡ · HIRE</p><small>简历登记 + 一对一初面</small>
+            </div>
+            <div class="station" style="left:93.3%;top:65%">
+              <div class="st-dot"></div><h4>抽奖 · 出口</h4><p>LUCKY DRAW</p><small>满 3 章抽 1 次 · 满 4 章抽 2 次</small>
+            </div>
+          </div>
+        </div>
+        <div class="reveal note" style="--i:3;margin-top:18px">B 区进出分离，避免人流对冲 · 雨天启用架空层备用场地，活动不取消</div>
+      </section>
+
+      <!-- ============ S6 DAY 1 ============ -->
+      <section class="slide" data-label="DAY 1" style="--gx:15%;--gy:20%">
+        <div class="reveal day-tag" style="--i:0">DAY 1 · NOV 21<b>把人拉进来</b></div>
+        <div class="tl">
+          <div class="reveal tl-row" style="--i:1">
+            <div class="tl-time">09:30</div><div class="tl-node"><i></i></div>
+            <div class="tl-what">开幕式 · 冠名揭牌<em>三机编队航拍合影</em></div>
+          </div>
+          <div class="reveal tl-row" style="--i:2">
+            <div class="tl-time">13:30</div><div class="tl-node"><i></i></div>
+            <div class="tl-what">大疆专场宣讲会<span class="light">技术 35' + 校招 15' + Q&amp;A · 目标 100 人</span></div>
+          </div>
+          <div class="reveal tl-row" style="--i:3">
+            <div class="tl-time">19:00</div><div class="tl-node"><i></i></div>
+            <div class="tl-what">无人机编队表演<em>15 架 · 压轴大秀</em><span class="light">呈现 DJI 标识 ×「深大」字样</span></div>
+          </div>
+          <div class="reveal tl-row" style="--i:4">
+            <div class="tl-time">19:15</div><div class="tl-node"><i></i></div>
+            <div class="tl-what">露天放映 + 终极大奖<span class="light">航拍作品放映 · 抽出无人机 1 台</span></div>
+          </div>
+        </div>
+        <div class="reveal note" style="--i:5;margin-top:24px">核心：把草坪变成可被拍照、可被传播的现场</div>
+      </section>
+
+      <!-- ============ S7 DAY 2 ============ -->
+      <section class="slide" data-label="DAY 2" style="--gx:85%;--gy:75%">
+        <div class="reveal day-tag" style="--i:0">DAY 2 · NOV 22<b>把人留下来</b></div>
+        <div class="tl">
+          <div class="reveal tl-row" style="--i:1">
+            <div class="tl-time">10:30</div><div class="tl-node"><i></i></div>
+            <div class="tl-what">飞行挑战赛<span class="light">限时航拍构图小赛 · 6 组 × 15'</span></div>
+          </div>
+          <div class="reveal tl-row" style="--i:2">
+            <div class="tl-time">15:00</div><div class="tl-node"><i></i></div>
+            <div class="tl-what">第四轮抽奖 · 集章截止<em>清空奖品库存</em></div>
+          </div>
+          <div class="reveal tl-row" style="--i:3">
+            <div class="tl-time">16:00</div><div class="tl-node"><i></i></div>
+            <div class="tl-what">闭幕颁奖<em>大疆科创优秀作品奖</em><span class="light">人才储备名单交付 · 全员大合影</span></div>
+          </div>
+          <div class="reveal tl-row" style="--i:4">
+            <div class="tl-time">16:40</div><div class="tl-node"><i></i></div>
+            <div class="tl-what">撤场复原<span class="light">草坪复原 · 校方验收 · 素材归档</span></div>
+          </div>
+        </div>
+        <div class="reveal note" style="--i:5;margin-top:24px">核心：把第一天积累的兴趣，变成简历和名单</div>
+      </section>
+
+      <!-- ============ S8 编队表演 ============ -->
+      <section class="slide sky" data-label="编队" id="skySlide" style="--gx:70%;--gy:75%">
+        <div class="form-wrap">
+          <div>
+            <div class="reveal kicker" style="--i:0">全场最强传播时刻 <b>Drone Show</b></div>
+            <div class="reveal fleet-15" style="--i:1;margin-top:20px"><span data-count="15">0</span><small>架编队 · 夜空压轴</small></div>
+            <ul class="reveal fleet-points" style="--i:2">
+              <li><b class="red">空中 LOGO</b>夜空呈现 DJI 标识 ×「深大」字样</li>
+              <li><b>60 M</b>限高 60 米 · 安全隔离 50 米</li>
+              <li><b>T-15</b>提前 15 天完成空域报备</li>
+              <li><b>30 MIN</b>摄影机位提前就位锁定</li>
+            </ul>
+          </div>
+          <div class="fleet reveal" id="fleet" style="--i:2">
+            <div class="swarm-path"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ S9 冠名权益 ============ -->
+      <section class="slide" data-label="权益" style="--gx:80%;--gy:15%">
+        <div class="rights-wrap">
+          <div>
+            <div class="reveal kicker" style="--i:0">冠名权益 <b>Exclusive</b></div>
+            <div class="reveal rights-12" style="--i:1;margin-top:12px"><span data-count="12">0</span><small>处品牌落点 · 全流程覆盖</small></div>
+          </div>
+          <div>
+            <div class="chips reveal" style="--i:2">
+              <span class="chip hot">活动全称冠名</span><span class="chip hot">A 区主视觉背景板</span><span class="chip">入口打卡板</span>
+              <span class="chip">开幕式致辞 8'</span><span class="chip hot">飞行护照 × 600 套</span><span class="chip">硅胶手环 × 600</span>
+              <span class="chip">志愿者服装 × 60</span><span class="chip hot">专场宣讲会</span><span class="chip">5 轮抽奖口播</span>
+              <span class="chip hot">编队呈现 DJI LOGO</span><span class="chip">闭幕奖杯 + 证书</span><span class="chip">推文 × 3 · 片头片尾</span>
+            </div>
+            <div class="reveal excl" style="--i:3">
+              <b>排他约定</b> — 活动全程及前后 7 天，校内物料不出现其他无人机 / 运动相机 / 手持影像品牌
+            </div>
+            <div class="plans reveal" style="--i:4">
+              <div class="plan"><b>方案 A · 5000</b>3 体验工位 · 官微 2 条+社群 3 波 · 定制复盘+人群画像</div>
+              <div class="plan"><b>方案 B · 4000</b>2 体验工位 · 官微 1 条+社群 2 波 · 标准复盘</div>
+              <div class="plan"><b>方案 C · 3000</b>1 体验工位 · HR 2 名+面试官席位 · 数据摘要</div>
+            </div>
+            <div class="reveal note" style="--i:5;margin-top:18px">三档重心不同而非规格不同 · 简历不经过联盟，直接走大疆官方投递渠道</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ S10 财务预算 ============ -->
+      <section class="slide" data-label="财务" style="--gx:78%;--gy:18%">
+        <div class="reveal kicker" style="--i:0">预算与明细 <b>Budget · ¥3,000</b></div>
+        <div class="fin-wrap">
+          <div class="fin-head">
+            <div class="reveal fin-total" style="--i:1">
+              ¥<span data-count="3000">0</span>
+              <span class="yuan">元</span>
+              <span class="cap">每一笔都有出处<br>深圳本地真实采购价</span>
+            </div>
+          </div>
+          <div class="bars">
+            <div class="reveal bar-row" style="--i:2;--w:.445">
+              <div class="bl">视觉物料<small>EXHIBIT · PRINT</small></div>
+              <div class="bar-track"><div class="bar-fill"></div></div>
+              <div class="bar-amt"><span data-count="1335">0</span><i> 元</i></div>
+            </div>
+            <div class="reveal bar-row" style="--i:3;--w:.21">
+              <div class="bl">现场执行<small>ON-SITE</small></div>
+              <div class="bar-track"><div class="bar-fill"></div></div>
+              <div class="bar-amt"><span data-count="630">0</span><i> 元</i></div>
+            </div>
+            <div class="reveal bar-row" style="--i:4;--w:.083">
+              <div class="bl">宣传引流<small>PROMOTION</small></div>
+              <div class="bar-track"><div class="bar-fill"></div></div>
+              <div class="bar-amt"><span data-count="250">0</span><i> 元</i></div>
+            </div>
+            <div class="reveal bar-row" style="--i:5;--w:.2">
+              <div class="bl">人力补贴<small>VOLUNTEERS</small></div>
+              <div class="bar-track"><div class="bar-fill"></div></div>
+              <div class="bar-amt"><span data-count="600">0</span><i> 元</i></div>
+            </div>
+            <div class="reveal bar-row" style="--i:6;--w:.062">
+              <div class="bl">备用机动金<small>RESERVE</small></div>
+              <div class="bar-track"><div class="bar-fill"></div></div>
+              <div class="bar-amt"><span data-count="185">0</span><i> 元</i></div>
+            </div>
+          </div>
+          <div class="reveal fin-detail" style="--i:7">
+            <span class="f-chip">主背景展板 10㎡桁架+喷绘 <b>¥800</b></span>
+            <span class="f-chip">X展架 ×2 <b>¥160</b></span>
+            <span class="f-chip">茶歇零食 60人份 <b>¥300</b></span>
+            <span class="f-chip">志愿者补贴 12人次 <b>¥600</b></span>
+            <span class="f-chip">表白墙+社群红包 <b>¥250</b></span>
+            <span class="f-chip">A2海报 ×20 <b>¥100</b></span>
+            <span class="f-chip">集章卡+工作证 <b>¥140</b></span>
+            <span class="f-chip">矿泉水 80瓶 <b>¥120</b></span>
+            <span class="f-chip">桌布·气球·杯巾 <b>¥130</b></span>
+            <span class="f-chip">横幅+KT指引牌 <b>¥135</b></span>
+            <span class="f-chip">工具耗材包 <b>¥80</b></span>
+            <span class="f-chip">设计费·音响·公众号 <b class="free">¥0</b> 美工/借用/置换</span>
+          </div>
+          <div class="fin-foot">
+            <div class="reveal fin-card" style="--i:8">
+              <div class="no r">付款节点 · PAYMENT</div>
+              <p>签约后付 <b>¥1,800</b> · 结案后付 <b>¥1,200</b></p>
+              <small>签署意向书后 5 个工作日内 60%，结案交付后 5 个工作日内 40%</small>
+            </div>
+            <div class="reveal fin-card" style="--i:9">
+              <div class="no">价格依据 · SOURCES</div>
+              <p>深圳本地 2025–26 真实采购价</p>
+              <small>淘宝深圳广告店 · 1688 厂家直供 · 58同城租赁 · 快印店 · 中科院先进院公开报价</small>
+            </div>
+            <div class="reveal fin-card" style="--i:10">
+              <div class="no">票据核查 · AUDIT</div>
+              <p>全部支出留存票据</p>
+              <small>结案随复盘报告提交、接受贵司核查 · 机动金花不完退回社团 · 场地桌椅学校借用不计入</small>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ S11 效果预估 ============ -->
+      <section class="slide" data-label="效果" style="--gx:25%;--gy:80%">
+        <div class="reveal kicker" style="--i:0">效果预估 <b>KPI · 可核查</b></div>
+        <h2 class="big reveal" style="--i:1;margin-top:16px">每一个数字，<span class="accent">都可交付核查</span></h2>
+        <div class="kpi-grid">
+          <div class="reveal kpi" style="--i:2;--w:.95" data-no="01">
+            <div class="stat-num"><span data-count="500">0</span><span class="unit">人</span></div>
+            <div class="stat-label">到场人数</div><div class="stat-sub">签到二维码去重</div><div class="bar"><i></i></div>
+          </div>
+          <div class="reveal kpi" style="--i:3;--w:.8" data-no="02">
+            <div class="stat-num"><span data-count="320">0</span><span class="unit">人次</span></div>
+            <div class="stat-label">产品体验</div><div class="stat-sub">集章卡回收 + 登记</div><div class="bar"><i></i></div>
+          </div>
+          <div class="reveal kpi" style="--i:4;--w:.6" data-no="03">
+            <div class="stat-num"><span data-count="150">0</span><span class="unit">份</span></div>
+            <div class="stat-label">简历与留资</div><div class="stat-sub">简历 + 授权留资表单</div><div class="bar"><i></i></div>
+          </div>
+          <div class="reveal kpi" style="--i:5;--w:1" data-no="04">
+            <div class="stat-num"><span data-count="8">0</span><span class="unit">万+ 次</span></div>
+            <div class="stat-label">内容曝光</div><div class="stat-sub">全渠道阅读播放合计</div><div class="bar"><i></i></div>
+          </div>
+          <div class="reveal kpi" style="--i:6;--w:.75" data-no="05">
+            <div class="stat-num"><span data-count="300">0</span><span class="unit">人</span></div>
+            <div class="stat-label">社群新增</div><div class="stat-sub">活动社群入群</div><div class="bar"><i></i></div>
+          </div>
+          <div class="reveal kpi" style="--i:7;--w:.9" data-no="06">
+            <div class="stat-num"><span data-count="90">0</span><span class="unit">%</span></div>
+            <div class="stat-label">满意度</div><div class="stat-sub">现场扫码问卷</div><div class="bar"><i></i></div>
+          </div>
+        </div>
+        <div class="reveal note" style="--i:8;margin-top:24px">结案 5 个工作日内交付：数据报表 / 影像素材包 / 学生反馈 / 人才名单（授权部分）</div>
+      </section>
+
+      <!-- ============ S11 尾页 ============ -->
+      <section class="slide" data-label="同飞" style="--gx:50%;--gy:30%;--rd:300ms">
+        <div class="end-wrap">
+          <div class="reveal kicker" style="--i:0;justify-content:center">后续合作展望 <b>Next Flight</b></div>
+          <h2 class="end-title">
+            <span class="split reveal" style="--i:1">先飞一次，</span><br>
+            <span class="split reveal" style="--i:2"><span class="accent">再谈未来。</span></span>
+          </h2>
+          <div class="end-cols">
+            <div class="reveal end-col" style="--i:3">
+              <div class="no">意向书 · 01</div><p>冠名与权益确认</p><small>12 处落点 · 排他约定</small>
+            </div>
+            <div class="reveal end-col" style="--i:4">
+              <div class="no">意向书 · 02</div><p>赞助与资源交付清单</p><small>现金档位 + 样机 + 人力</small>
+            </div>
+            <div class="reveal end-col" style="--i:5">
+              <div class="no">意向书 · 03</div><p>后续合作时间表</p><small>招聘会 → 创新赛 → 年度框架</small>
+            </div>
+          </div>
+          <div class="reveal" style="--i:6">
+            <span class="end-cta">
+              深圳大学创业者联盟 · 校企合作部
+              <svg viewBox="0 0 60 20"><path d="M2 10 H50 M44 3 l8 7 -8 7"/></svg>
+            </span>
+          </div>
+          <div class="reveal" style="--i:7;margin-top:26px;font-family:var(--tech);font-size:11px;letter-spacing:.4em;color:var(--faint)">
+            V1.0 · 2026.10 · 呈送 大疆创新 品牌市场部 / 校园招聘团队
+          </div>
+          <div class="takeoff-zone"><div class="takeoff">
+            <svg viewBox="0 0 200 200" aria-hidden="true">
+              <g stroke="#39424E" stroke-width="9" stroke-linecap="round">
+                <line x1="100" y1="100" x2="42" y2="42"/><line x1="100" y1="100" x2="158" y2="42"/>
+                <line x1="100" y1="100" x2="42" y2="158"/><line x1="100" y1="100" x2="158" y2="158"/>
+              </g>
+              <g fill="none" stroke="rgba(255,255,255,.2)" stroke-width="2">
+                <circle cx="42" cy="42" r="24"/><circle cx="158" cy="42" r="24"/><circle cx="42" cy="158" r="24"/><circle cx="158" cy="158" r="24"/>
+              </g>
+              <g class="prop-blades" transform="translate(42,42)"><ellipse rx="22" ry="3" fill="rgba(238,242,246,.7)"/><ellipse rx="22" ry="3" fill="rgba(238,242,246,.45)" transform="rotate(90)"/></g>
+              <g class="prop-blades" transform="translate(158,42)"><ellipse rx="22" ry="3" fill="rgba(238,242,246,.7)"/><ellipse rx="22" ry="3" fill="rgba(238,242,246,.45)" transform="rotate(90)"/></g>
+              <g class="prop-blades" transform="translate(42,158)"><ellipse rx="22" ry="3" fill="rgba(238,242,246,.7)"/><ellipse rx="22" ry="3" fill="rgba(238,242,246,.45)" transform="rotate(90)"/></g>
+              <g class="prop-blades" transform="translate(158,158)"><ellipse rx="22" ry="3" fill="rgba(238,242,246,.7)"/><ellipse rx="22" ry="3" fill="rgba(238,242,246,.45)" transform="rotate(90)"/></g>
+              <rect x="66" y="66" width="68" height="68" rx="19" fill="#171C23" stroke="rgba(255,255,255,.14)"/>
+              <rect x="82" y="95" width="36" height="5" rx="2.5" fill="#D9335A"/>
+            </svg>
+          </div></div>
+        </div>
+      </section>
+
+      <!-- ============ HUD ============ -->
+      <header class="hud hud-top">
+        <div class="brand"><span class="mark"></span>DJI大疆 <em>×</em> 深大创联<small>未来飞行家</small></div>
+        <div class="hud-date">2026.11.21 — 22 · 粤海校区</div>
+      </header>
+      <footer class="hud hud-bottom">
+        <div class="counter"><b id="curNum">01</b><span>/ <span id="totalNum">11</span></span><span class="lb" id="curLabel">蓝图</span></div>
+        <div class="progress" id="progress"><div class="p-dash"></div><div class="p-fill"></div><div class="p-marker"></div></div>
+        <div class="nav-btns">
+          <button id="prevBtn" aria-label="上一页">‹</button>
+          <button id="nextBtn" aria-label="下一页">›</button>
+        </div>
+      </footer>
+      <nav id="dots" aria-label="页面导航"></nav>
+
+    </div><!-- /shaker -->
+  </div><!-- /stage -->
+
+  <!-- ============ 转场特效层 ============ -->
+  <div id="wash"></div>
+  <div id="speedlines"><span></span><span></span><span></span><span></span></div>
+  <div id="flyLayer" aria-hidden="true">
+    <div class="drone-x" id="droneX">
+      <div class="drone-inner">
+        <div class="d-trail"></div>
+        <svg viewBox="0 0 200 200">
+          <g stroke="#39424E" stroke-width="10" stroke-linecap="round">
+            <line x1="100" y1="100" x2="42" y2="42"/><line x1="100" y1="100" x2="158" y2="42"/>
+            <line x1="100" y1="100" x2="42" y2="158"/><line x1="100" y1="100" x2="158" y2="158"/>
+          </g>
+          <g transform="translate(42,42)"><circle r="31" fill="none" stroke="rgba(255,255,255,.25)" stroke-width="1.5"/>
+            <g class="prop-blades"><ellipse rx="28" ry="3.4" fill="rgba(238,242,246,.85)"/><ellipse rx="28" ry="3.4" fill="rgba(238,242,246,.55)" transform="rotate(90)"/></g>
+            <circle r="4.5" fill="#20262E" stroke="rgba(255,255,255,.3)"/></g>
+          <g transform="translate(158,42)"><circle r="31" fill="none" stroke="rgba(255,255,255,.25)" stroke-width="1.5"/>
+            <g class="prop-blades"><ellipse rx="28" ry="3.4" fill="rgba(238,242,246,.85)"/><ellipse rx="28" ry="3.4" fill="rgba(238,242,246,.55)" transform="rotate(90)"/></g>
+            <circle r="4.5" fill="#20262E" stroke="rgba(255,255,255,.3)"/></g>
+          <g transform="translate(42,158)"><circle r="31" fill="none" stroke="rgba(255,255,255,.25)" stroke-width="1.5"/>
+            <g class="prop-blades"><ellipse rx="28" ry="3.4" fill="rgba(238,242,246,.85)"/><ellipse rx="28" ry="3.4" fill="rgba(238,242,246,.55)" transform="rotate(90)"/></g>
+            <circle r="4.5" fill="#20262E" stroke="rgba(255,255,255,.3)"/></g>
+          <g transform="translate(158,158)"><circle r="31" fill="none" stroke="rgba(255,255,255,.25)" stroke-width="1.5"/>
+            <g class="prop-blades"><ellipse rx="28" ry="3.4" fill="rgba(238,242,246,.85)"/><ellipse rx="28" ry="3.4" fill="rgba(238,242,246,.55)" transform="rotate(90)"/></g>
+            <circle r="4.5" fill="#20262E" stroke="rgba(255,255,255,.3)"/></g>
+          <rect x="62" y="62" width="76" height="76" rx="21" fill="#171C23" stroke="rgba(255,255,255,.16)"/>
+          <rect x="77" y="77" width="46" height="46" rx="13" fill="#1B2129" stroke="rgba(255,255,255,.1)"/>
+          <rect x="79" y="96" width="42" height="5" rx="2.5" fill="#D9335A"/>
+          <circle cx="100" cy="100" r="12" fill="#0F1418" stroke="rgba(255,255,255,.22)"/>
+          <circle cx="100" cy="100" r="6" fill="#243240"/>
+          <circle cx="100" cy="98.4" r="2.2" fill="#D9335A" class="led-nav"/>
+        </svg>
+      </div>
+    </div>
+  </div>
+
+  <!-- 氛围层 -->
+  <div id="vignette"></div>
+  <div id="scan"></div>
+  <div id="grain"></div>
+</div>
+
+<script>
+(function(){
+  'use strict';
+  const $=(s,c)=>(c||document).querySelector(s);
+  const $$=(s,c)=>[...(c||document).querySelectorAll(s)];
+  const app=$('#app'),shaker=$('#shaker');
+  const slides=$$('.slide');
+  const N=slides.length;
+  let cur=0,busy=false;
+
+  /* ---------- 标题字符拆分 ---------- */
+  $$('.split').forEach(el=>{
+    const txt=el.textContent;
+    el.textContent='';
+    [...txt].forEach((c,i)=>{
+      const sp=document.createElement('span');
+      sp.className='ch';
+      sp.style.setProperty('--ci',i);
+      sp.textContent=c;
+      el.appendChild(sp);
+    });
+  });
+
+  /* ---------- 数字滚动 ---------- */
+  function runCounters(slide){
+    $$('[data-count]',slide).forEach(el=>{
+      const to=parseFloat(el.dataset.count);
+      const dur=1100;
+      const t0=performance.now();
+      (function tick(t){
+        const p=Math.min(1,(t-t0)/dur);
+        const e=1-Math.pow(1-p,3);
+        el.textContent=Math.round(to*e);
+        if(p<1)requestAnimationFrame(tick);
+      })(t0);
+    });
+  }
+
+  /* ---------- 动线路径巡航无人机 ---------- */
+  let routeRaf=0;
+  function startRoute(){
+    cancelAnimationFrame(routeRaf);
+    const path=$('#routePath'),dot=$('#routeDot');
+    if(!path||!dot)return;
+    const L=path.getTotalLength();
+    let t0=performance.now(),dist=0;
+    (function loop(t){
+      dist=((t-t0)/1000*150)%L;
+      const p=path.getPointAtLength(dist);
+      dot.setAttribute('transform','translate('+p.x+','+p.y+')');
+      routeRaf=requestAnimationFrame(loop);
+    })(t0);
+  }
+  function stopRoute(){cancelAnimationFrame(routeRaf);routeRaf=0}
+
+  /* ---------- 15 机编队 ---------- */
+  const MINI='<svg viewBox="0 0 40 40" aria-hidden="true">'
+    +'<g stroke="rgba(255,255,255,.5)" stroke-width="2.4" stroke-linecap="round">'
+    +'<line x1="11" y1="11" x2="29" y2="29"/><line x1="29" y1="11" x2="11" y2="29"/></g>'
+    +'<g fill="none" stroke="rgba(217,51,90,.8)" stroke-width="1.6">'
+    +'<circle cx="11" cy="11" r="4.6"/><circle cx="29" cy="11" r="4.6"/>'
+    +'<circle cx="11" cy="29" r="4.6"/><circle cx="29" cy="29" r="4.6"/></g>'
+    +'<circle cx="20" cy="20" r="6.4" fill="#171C23" stroke="rgba(255,255,255,.3)" stroke-width="1.4"/>'
+    +'<circle cx="20" cy="18.6" r="2" fill="#D9335A"/></svg>';
+  const fleet=$('#fleet');
+  if(fleet){
+    const pos=[];
+    for(let r=0;r<3;r++){
+      for(let c=0;c<5;c++){
+        pos.push([14+c*18+(r%2?4.5:-4.5), 16+r*34]);
+      }
+    }
+    pos.forEach(([x,y],i)=>{
+      const d=document.createElement('div');
+      d.className='m-drone';
+      d.style.left=x+'%';d.style.top=y+'%';
+      d.style.setProperty('--fd',(2.6+Math.random()*2.4)+'s');
+      d.style.setProperty('--fdel',(-Math.random()*5)+'s');
+      d.innerHTML='<span class="ring"></span><span class="led '+(i%2?'g':'r')+'"></span>'+MINI;
+      fleet.appendChild(d);
+    });
+  }
+
+  /* ---------- HUD 同步 ---------- */
+  const dotsWrap=$('#dots');
+  slides.forEach((s,i)=>{
+    const b=document.createElement('button');
+    b.className='dot';
+    b.dataset.label=s.dataset.label||('0'+(i+1));
+    b.setAttribute('aria-label','第'+(i+1)+'页 '+b.dataset.label);
+    b.addEventListener('click',()=>go(i,i>cur?'next':'prev'));
+    dotsWrap.appendChild(b);
+  });
+  const dots=$$('#dots .dot');
+  $('#totalNum').textContent=String(N).padStart(2,'0');
+
+  function syncHud(){
+    $('#curNum').textContent=String(cur+1).padStart(2,'0');
+    $('#curLabel').textContent=slides[cur].dataset.label||'';
+    app.style.setProperty('--p',(cur/(N-1)).toFixed(4));
+    dots.forEach((d,i)=>d.classList.toggle('on',i===cur));
+  }
+
+  /* ---------- 页面进入钩子 ---------- */
+  function onEnter(idx){
+    const s=slides[idx];
+    runCounters(s);
+    if(s.id==='slide-route')startRoute();else stopRoute();
+  }
+
+  /* ---------- 核心转场：无人机穿场 ---------- */
+  const flyLayer=$('#flyLayer'),droneX=$('#droneX');
+  const speed=$('#speedlines'),wash=$('#wash');
+
+  function go(n,dir){
+    if(busy||n===cur||n<0||n>=N)return;
+    busy=true;
+    app.dataset.dir=dir;
+    flyLayer.dataset.dir=dir;
+    flyLayer.classList.add('on');
+    droneX.classList.remove('fly');void droneX.offsetWidth;droneX.classList.add('fly');
+    speed.classList.remove('go');void speed.offsetWidth;speed.classList.add('go');
+    wash.classList.remove('go');void wash.offsetWidth;wash.classList.add('go');
+
+    /* 无人机掠过中线附近 → 镜头震动 */
+    setTimeout(()=>{shaker.classList.add('shaking')},250);
+
+    /* 无人机飞到中点 → 切页（旧内容被吹走，新内容浮起） */
+    setTimeout(()=>{
+      const old=slides[cur];
+      old.classList.remove('active');
+      old.classList.add('leaving');
+      cur=n;
+      const s=slides[cur];
+      s.classList.remove('leaving');
+      s.classList.add('active');
+      syncHud();
+      onEnter(cur);
+    },300);
+
+    /* 收尾 */
+    setTimeout(()=>{
+      slides.forEach(s=>s.classList.remove('leaving'));
+      shaker.classList.remove('shaking');
+      flyLayer.classList.remove('on');
+      busy=false;
+    },1250);
+  }
+  const next=()=>go(cur+1,'next');
+  const prev=()=>go(cur-1,'prev');
+
+  /* ---------- 输入：按钮 / 键盘 / 滚轮 / 触摸 ---------- */
+  $('#nextBtn').addEventListener('click',next);
+  $('#prevBtn').addEventListener('click',prev);
+
+  addEventListener('keydown',e=>{
+    if(['ArrowRight','ArrowDown','PageDown',' '].includes(e.key)){e.preventDefault();next();}
+    else if(['ArrowLeft','ArrowUp','PageUp'].includes(e.key)){e.preventDefault();prev();}
+    else if(e.key==='Home'){go(0,'prev')}
+    else if(e.key==='End'){go(N-1,'next')}
+  });
+
+  let acc=0,cool=false;
+  addEventListener('wheel',e=>{
+    if(busy||cool)return;
+    acc+=e.deltaY;
+    if(Math.abs(acc)>60){
+      (acc>0?next:prev)();
+      acc=0;cool=true;
+      setTimeout(()=>cool=false,400);
+    }
+  },{passive:true});
+
+  let tx=0,ty=0;
+  addEventListener('touchstart',e=>{tx=e.touches[0].clientX;ty=e.touches[0].clientY},{passive:true});
+  addEventListener('touchend',e=>{
+    const dx=e.changedTouches[0].clientX-tx;
+    const dy=e.changedTouches[0].clientY-ty;
+    if(Math.abs(dx)>60&&Math.abs(dx)>Math.abs(dy)*1.4)(dx<0?next:prev)();
+  },{passive:true});
+
+  /* ---------- 封面无人机视差 ---------- */
+  const cover=$('#slide-cover'),hd=$('#hoverDrone');
+  cover.addEventListener('mousemove',e=>{
+    const x=e.clientX/innerWidth-.5,y=e.clientY/innerHeight-.5;
+    hd.style.setProperty('--tx',(x*16)+'deg');
+    hd.style.setProperty('--ty',(-y*12)+'deg');
+  });
+  cover.addEventListener('mouseleave',()=>{
+    hd.style.setProperty('--tx','0deg');hd.style.setProperty('--ty','0deg');
+  });
+
+  /* ---------- 启动 ---------- */
+  slides[0].classList.add('active');
+  syncHud();
+  onEnter(0);
+})();
+</script>
+</body>
+</html>
